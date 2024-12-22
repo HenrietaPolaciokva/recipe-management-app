@@ -28,6 +28,7 @@ export default {
     icons: ["mdi-facebook", "mdi-twitter", "mdi-linkedin", "mdi-instagram"],
   }),
 };
+
 </script>
 
 <style scoped>

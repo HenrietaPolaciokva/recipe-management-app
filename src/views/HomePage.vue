@@ -1,3 +1,11 @@
+<!--
+  The HomePage component is the main landing page for the Recipe Management
+  website. It displays a hero section with a title, tagline, and call-to-action
+  button. Below the hero section is a features section that highlights the main
+  features of the website: browsing recipes, adding and editing recipes, and
+  managing a collection of recipes. The page also includes a call-to-action
+  section with buttons to add a recipe or view all recipes.
+-->
 <template>
   <div class="homepage">
     <!-- Hero Section -->
@@ -11,7 +19,6 @@
       <!-- Call-to-Action Button -->
       <router-link to="/recipes" class="cta-button">Browse Recipes</router-link>
     </div>
-
     <!-- Features Section -->
     <div class="features-section">
       <!-- Title -->
@@ -37,7 +44,6 @@
         </div>
       </div>
     </div>
-
     <!-- Call-to-Action Section -->
     <div class="cta-section">
       <!-- Title -->
@@ -60,39 +66,48 @@
     </div>
   </div>
 </template>
-
 <script>
 export default {
   name: "HomePage",
+  components: {},
 };
 </script>
-
 <style scoped>
+/* Style the Homepage */
+.homepage {
+  padding: 20px;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  color: #333;
+  margin: 0;
+}
 /* Style the Hero Section */
 .hero-section {
+  text-align: center;
+  padding: 40px;
   background-color: #f9f9f9;
-  padding: 50px 20px;
   border-radius: 10px;
   margin-bottom: 30px;
-  text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  color: #333;
 }
-
 /* Style the Hero Section Title */
 .hero-section h1 {
   font-size: 2.5rem;
   margin-bottom: 10px;
   color: #333;
 }
-
 /* Style the Hero Section Description */
 .hero-section p {
   font-size: 1.2rem;
   margin-bottom: 20px;
   color: #666;
 }
-
 /* Style the Call-to-Action Button */
 .cta-button {
   display: inline-block;
@@ -104,12 +119,10 @@ export default {
   border-radius: 5px;
   margin: 5px;
 }
-
 /* Style the Secondary Call-to-Action Button */
 .cta-button.secondary {
   background-color: #2196f3;
 }
-
 /* Style the Features Section */
 .features-section {
   margin: 40px 0;
@@ -117,7 +130,6 @@ export default {
   padding: 20px;
   border-radius: 10px;
 }
-
 /* Style the Features Title */
 .features-section h2 {
   font-size: 2rem;

@@ -1,67 +1,106 @@
-import { createStore } from "vuex";
+import { defineStore } from "pinia";
+import axios from "axios";
 
-// Define the initial state of the recipes store
-const initialState = {
-  recipes: [],
+const storageKey = "recipes";
+
+const getRecipesFromStorage = () => {
+  const storedRecipes = localStorage.getItem(storageKey);
+  return storedRecipes ? JSON.parse(storedRecipes) : [];
 };
 
-// Define the recipes store using Vuex
-export const useRecipesStore = createStore({
-  // state: initialState,
+const saveRecipesToStorage = (recipes) => {
+  localStorage.setItem(storageKey, JSON.stringify(recipes));
+};
+
+const addRecipeToStorage = (newRecipe) => {
+  const recipes = getRecipesFromStorage();
+  recipes.push(newRecipe);
+  saveRecipesToStorage(recipes);
+};
+
+const updateRecipeInStorage = (updatedRecipe) => {
+  const recipes = getRecipesFromStorage();
+  const index = recipes.findIndex((recipe) => recipe.id === updatedRecipe.id);
+  if (index !== -1) {
+    recipes[index] = updatedRecipe;
+    saveRecipesToStorage(recipes);
+  }
+};
+
+const deleteRecipeFromStorage = (id) => {
+  const recipes = getRecipesFromStorage();
+  const index = recipes.findIndex((recipe) => recipe.id === id);
+  if (index !== -1) {
+    recipes.splice(index, 1);
+    saveRecipesToStorage(recipes);
+  }
+};
+
+export const useRecipesStore = defineStore("recipes", {
+  state: () => ({
+    recipes: getRecipesFromStorage(),
+    loading: false,
+    error: null,
+    currentPage: 1,
+    itemsPerPage: 10,
+  }),
   getters: {
-    // Get a recipe by its ID
-    getRecipeById: (state) => (id) => state.recipes.find((r) => r.id === id),
-    // Get all recipes
+    getRecipeById: (state) => (id) => {
+      return state.recipes.find((recipe) => recipe.id === id);
+    },
+    getRecipesForCurrentPage: (state) =>
+      state.recipes.slice(
+        (state.currentPage - 1) * state.itemsPerPage,
+        state.currentPage * state.itemsPerPage
+      ),
+    getTotalRecipes: (state) => state.recipes.length,
     getRecipes: (state) => state.recipes,
   },
-  mutations: {
-    // Add a new recipe to the state
-    addRecipe(state, recipe) {
-      state.recipes.push(recipe);
-    },
-    // Update an existing recipe in the state
-    updateRecipe(state, { id, updatedRecipe }) {
-      const index = state.recipes.findIndex((r) => r.id === id);
-      if (index !== -1) {
-        state.recipes[index] = updatedRecipe;
+  actions: {
+    async fetchRecipes() {
+      try {
+        const response = await axios.get("http://127.0.0.1:3000/recipes");
+        this.recipes = response.data;
+        return Promise.resolve();
+      } catch (error) {
+        console.error("Error fetching recipes:", error);
+        return Promise.reject(error);
       }
     },
-    // Delete a recipe from the state
-    deleteRecipe(state, id) {
-      state.recipes = state.recipes.filter((r) => r.id !== id);
+    async addRecipe(recipe) {
+      try {
+        this.loading = true;
+        addRecipeToStorage(recipe);
+        this.recipes = getRecipesFromStorage();
+        this.loading = false;
+      } catch (error) {
+        this.error = error.message;
+        this.loading = false;
+      }
     },
-    // Set the recipes state with a new array of recipes
-    setRecipes(state, recipes) {
-      state.recipes = recipes;
+    async updateRecipe(updatedRecipe) {
+      try {
+        this.loading = true;
+        updateRecipeInStorage(updatedRecipe);
+        this.recipes = getRecipesFromStorage();
+        this.loading = false;
+      } catch (error) {
+        this.error = error.message;
+        this.loading = false;
+      }
     },
-    // Clear all recipes from the state
-    clearRecipes(state) {
-      state.recipes = [];
+    async deleteRecipe(id) {
+      try {
+        this.loading = true;
+        deleteRecipeFromStorage(id);
+        this.recipes = getRecipesFromStorage();
+        this.loading = false;
+      } catch (error) {
+        this.error = error.message;
+        this.loading = false;
+      }
     },
   },
-  actions: {
-    // Commit a new recipe to the state
-    addRecipe({ commit }, recipe) {
-      commit("addRecipe", recipe);
-    },
-    // Commit an updated recipe to the state
-    updateRecipe({ commit }, { id, updatedRecipe }) {
-      commit("updateRecipe", { id, updatedRecipe });
-    },
-    // Commit a recipe deletion to the state
-    deleteRecipe({ commit }, id) {
-      commit("deleteRecipe", id);
-    },
-    // Commit a new set of recipes to the state
-    setRecipes({ commit }, recipes) {
-      commit("setRecipes", recipes);
-    },
-    // Commit clearing all recipes from the state
-    clearRecipes({ commit }) {
-      commit("clearRecipes");
-    },
-  },
-  modules: {},
 });
 
 export default useRecipesStore;

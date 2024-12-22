@@ -1,0 +1,48 @@
+{
+  "recipes": [
+    {
+      "id": "8cd7",
+      "name": "Spaghetti Carbonara",
+      "ingredients": "Spaghetti, Bacon, Eggs, Parmesan Cheese, Black Pepper",
+      "instructions": "Cook spaghetti. Fry bacon. Whisk eggs with Parmesan. Combine spaghetti, bacon, and egg mixture. Season with pepper.",
+      "prepTime": 16,
+      "cookTime": 21,
+      "notes": "Use high-quality Parmesan cheese."
+    },
+    {
+      "id": "c364",
+      "name": "Chicken Stir-fry",
+      "ingredients": "Chicken, Vegetables (broccoli, carrots, onions), Soy Sauce, Ginger, Garlic",
+      "instructions": "Stir-fry chicken. Add vegetables and cook until tender. Season with soy sauce, ginger, and garlic.",
+      "prepTime": 10,
+      "cookTime": 15,
+      "notes": "Serve with rice."
+    },
+    {
+      "id": "d1d2",
+      "name": "Pizza Margherita",
+      "ingredients": "Pizza dough, Tomato sauce, Mozzarella cheese, Basil",
+      "instructions": "Roll out dough, spread tomato sauce, add mozzarella, and bake. Garnish with basil.",
+      "prepTime": 20,
+      "cookTime": 15,
+      "notes": "Use fresh mozzarella for best results."
+    },
+    {
+      "id": "5cab",
+      "name": "Chocolate Chip Cookies",
+      "ingredients": "Flour, Sugar, Butter, Eggs, Chocolate Chips",
+      "instructions": "Cream butter and sugar. Add eggs and mix. Combine with dry ingredients. Fold in chocolate chips. Bake.",
+      "prepTime": 20,
+      "cookTime": 10,
+      "notes": "Chill dough for best results."
+    }
+  ],
+  "users": [
+    {
+      "id": "1",
+      "name": "User 1",
+      "email": "2N4Kw@example.com",
+      "password": "password1"
+    }
+  ]
+}

@@ -1,60 +1,119 @@
 <template>
-  <div>
-    <!--
-      This is the template for the Recipe List Display component.
+  <div class="container mt-5">
+    <h1 class="mb-4">Recipe List</h1>
+    <div class="d-flex mb-4 gap-3">
+      <!-- Search input to filter recipes by name -->
+      <input
+        type="text"
+        v-model="searchQuery"
+        class="form-control"
+        placeholder="Search recipes..."
+        aria-label="Search recipes"
+      />
 
-      It contains a search bar, a button to add a new recipe, and a list of recipes.
-      The list of recipes is paginated, and the user can navigate between pages
-      using the pagination component at the bottom of the page.
-    -->
-    <h1>Recipe List</h1>
-    <v-text-field
-      v-model="searchQuery"
-      label="Search recipes..."
-      outlined
-      class="mb-4"
-    ></v-text-field>
-    <v-btn color="primary" class="mb-4" @click="addRecipe">Add Recipe</v-btn>
-    <v-list>
-      <v-list-item
-        v-for="recipe in paginatedRecipes"
-        :key="recipe.id"
-        class="recipe-item"
+      <!-- Select to filter recipes by category -->
+      <select
+        v-model="selectedCategory"
+        class="form-select"
+        aria-label="Filter by category"
       >
-        <v-list-item-content>
-          <!--
-            When the user clicks on a recipe, take them to the recipe details page
-            with the id of the recipe as a parameter.
-          -->
-          <v-list-item-title @click="viewRecipe(recipe.id)">
-            {{ recipe.name }}
-          </v-list-item-title>
-        </v-list-item-content>
-        <v-list-item-action>
-          <!--
-            When the user clicks on the edit button, take them to the edit recipe page
-            with the id of the recipe as a parameter.
-          -->
-          <v-btn icon color="blue" @click="editRecipe(recipe.id)">
-            <v-icon>mdi-pencil</v-icon>
-          </v-btn>
-          <!--
-            When the user clicks on the delete button, prompt them to confirm that
-            they want to delete the recipe. If they confirm, send a delete request
-            to the server, and then update the recipe list by removing the deleted
-            recipe.
-          -->
-          <v-btn icon color="red" @click="deleteRecipe(recipe.id)">
-            <v-icon>mdi-delete</v-icon>
-          </v-btn>
-        </v-list-item-action>
-      </v-list-item>
-    </v-list>
-    <!--
-      This is the pagination component, which displays the number of pages
-      and allows the user to navigate between them.
-    -->
+        <option value="">All Categories</option>
+        <option
+          v-for="category in categories"
+          :key="category"
+          :value="category"
+        >
+          {{ category }}
+        </option>
+      </select>
+
+      <!-- Select to sort recipes by name, rating, or category -->
+      <select
+        v-model="sortOption"
+        class="form-select"
+        aria-label="Sort recipes"
+      >
+        <option value="">Sort By</option>
+        <option value="name">Name</option>
+        <option value="rating">Rating</option>
+        <option value="category">Category</option>
+      </select>
+    </div>
+    <button class="btn btn-primary mb-4" @click="addRecipe">Add Recipe</button>
+
+    <!-- Loading Indicator -->
+    <div v-if="loading" class="text-center my-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div v-if="error" class="alert alert-danger">
+      {{ error }}
+    </div>
+
+    <!-- No Recipes Found -->
+    <div
+      v-if="!loading && paginatedRecipes.length === 0"
+      class="alert alert-info"
+    >
+      No recipes found. Try adjusting your search or filter criteria.
+    </div>
+
+    <!-- Recipe Table -->
+    <table
+      v-if="!loading && paginatedRecipes.length > 0"
+      class="table table-hover"
+    >
+      <thead>
+        <tr>
+          <th @click="setSortOption('name')" style="cursor: pointer">Name</th>
+          <th>Description</th>
+          <th @click="setSortOption('category')" style="cursor: pointer">
+            Category
+          </th>
+          <th>Prep Time</th>
+          <th>Cook Time</th>
+          <th @click="setSortOption('rating')" style="cursor: pointer">
+            Rating
+          </th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="recipe in paginatedRecipes" :key="recipe.id">
+          <td>{{ recipe.name }}</td>
+          <td>{{ recipe.description }}</td>
+          <td>{{ recipe.category }}</td>
+          <td>{{ recipe.prepTime }}</td>
+          <td>{{ recipe.cookTime }}</td>
+          <td>
+            <span v-for="n in recipe.rating" :key="n" class="text-warning"
+              >&#x2605;</span
+            >
+          </td>
+          <td>
+            <button class="btn btn-primary me-2" @click="viewRecipe(recipe.id)">
+              View
+            </button>
+            <button class="btn btn-warning me-2" @click="editRecipe(recipe.id)">
+              Edit
+            </button>
+            <button
+              class="btn btn-danger"
+              @click="handleDeleteConfirmation(recipe.id)"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination Component -->
     <PaginationComponent
+      v-if="!loading"
       :total-items="filteredRecipes.length"
       :items-per-page="itemsPerPage"
       :current-page="currentPage"
@@ -65,85 +124,238 @@
 
 <script>
 import PaginationComponent from "@/components/reusables/PaginationComponent.vue";
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import axios from "axios";
 
+/**
+ * This component displays a list of recipes, along with a search bar and a
+ * category filter. It also handles pagination and sorting.
+ */
 export default {
   name: "RecipeListDisplay",
   components: {
     PaginationComponent,
   },
-  data() {
-    return {
-      recipes: [],
-      searchQuery: "",
-      currentPage: 1,
-      itemsPerPage: 5,
-    };
-  },
-  computed: {
-    filteredRecipes() {
-      // Filter the recipes based on the search query
-      return this.recipes.filter((recipe) =>
-        recipe.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
-    },
-    paginatedRecipes() {
-      // Calculate the start and end indices for the current page
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      const end = start + this.itemsPerPage;
-      return this.filteredRecipes.slice(start, end);
-    },
-  },
-  methods: {
-    fetchRecipes() {
-      // Fetch the recipes from the server
-      // For now, just return a dummy list of recipes
-      return [
-        { id: 1, name: "Recipe 1" },
-        { id: 2, name: "Recipe 2" },
-        { id: 3, name: "Recipe 3" },
-        { id: 4, name: "Recipe 4" },
-        { id: 5, name: "Recipe 5" },
-      ];
-    },
-    viewRecipe(id) {
-      // Navigate to the recipe details page with the id as a parameter
-      this.$router.push(`/recipes/${id}`);
-    },
-    addRecipe() {
-      // Navigate to the add recipe page
-      this.$router.push("/recipes/add");
-    },
-    editRecipe(id) {
-      // Navigate to the edit recipe page with the id as a parameter
-      this.$router.push(`/recipes/edit/${id}`);
-    },
-    deleteRecipe(id) {
-      // Prompt the user to confirm that they want to delete the recipe
-      if (confirm("Are you sure you want to delete this recipe?")) {
-        // Delete the recipe from the server
-        // For now, just update the local recipe list
-        const index = this.recipes.findIndex((recipe) => recipe.id === id);
-        if (index !== -1) {
-          this.recipes.splice(index, 1);
-        }
-        // Fetch the recipes from the server again
-        this.fetchRecipes();
+  setup() {
+    /**
+     * The list of recipes, fetched from the API.
+     * @type {Ref<Recipe[]>}
+     */
+    const recipes = ref([]);
+
+    /**
+     * The list of categories, fetched from the API.
+     * @type {Ref<string[]>}
+     */
+    const categories = ref([]);
+
+    /**
+     * The search query entered by the user.
+     * @type {Ref<string>}
+     */
+    const searchQuery = ref("");
+    /**
+     * The selected category, or an empty string if the user hasn't selected a
+     * category.
+     * @type {Ref<string>}
+     */
+    const selectedCategory = ref("");
+    /**
+     * The sort option selected by the user, or an empty string if the user
+     * hasn't selected a sort option.
+     * @type {Ref<string>}
+     */
+    const sortOption = ref("");
+    /**
+     * The current page number.
+     * @type {Ref<number>}
+     */
+    const currentPage = ref(1);
+    /**
+     * The number of items to display per page.
+     * @type {Ref<number>}
+     */
+    const itemsPerPage = ref(5);
+    /**
+     * Whether the component is currently loading data from the API.
+     * @type {Ref<boolean>}
+     */
+    const loading = ref(false);
+    /**
+     * Any error message that occurred while loading data from the API.
+     * @type {Ref<string>}
+     */
+    const error = ref("");
+    /**
+     * The router instance, used to navigate to different routes.
+     * @type {Router}
+     */
+    const router = useRouter();
+
+    /**
+     * Fetches the list of recipes from the API.
+     * @returns {Promise<void>}
+     */
+    const fetchRecipes = async () => {
+      loading.value = true;
+      try {
+        const response = await axios.get("http://127.0.0.1:3000/recipes");
+        recipes.value = response.data;
+        categories.value = [...new Set(response.data.map((r) => r.category))];
+      } catch (error) {
+        error.value = "Error fetching recipes:" + error.message;
+      } finally {
+        loading.value = false;
       }
-    },
-    handlePageChange(newPage) {
-      // Update the current page number
-      this.currentPage = newPage;
-    },
-  },
-  created() {
-    // Fetch the recipes from the server when the component is created
-    this.fetchRecipes();
+    };
+
+    /**
+     * Returns the filtered list of recipes, based on the current search query
+     * and selected category.
+     * @type {ComputedRef<Recipe[]>}
+     */
+    const filteredRecipes = computed(() => {
+      let results = recipes.value;
+      if (searchQuery.value) {
+        results = results.filter((recipe) =>
+          recipe.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+        );
+      }
+      if (selectedCategory.value) {
+        results = results.filter(
+          (recipe) => recipe.category === selectedCategory.value
+        );
+      }
+      return results;
+    });
+
+    /**
+     * Returns the sorted list of recipes, based on the current sort option.
+     * @type {ComputedRef<Recipe[]>}
+     */
+    const sortedRecipes = computed(() => {
+      const results = [...filteredRecipes.value];
+      if (sortOption.value === "name") {
+        results.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (sortOption.value === "rating") {
+        results.sort((a, b) => b.rating - a.rating);
+      } else if (sortOption.value === "category") {
+        results.sort((a, b) => a.category.localeCompare(b.category));
+      }
+      return results;
+    });
+
+    /**
+     * Returns the paginated list of recipes, based on the current page number
+     * and the number of items per page.
+     * @type {ComputedRef<Recipe[]>}
+     */
+    const paginatedRecipes = computed(() => {
+      const start = (currentPage.value - 1) * itemsPerPage.value;
+      return sortedRecipes.value.slice(start, start + itemsPerPage.value);
+    });
+
+    /**
+     * Handles the event of the user changing the page number.
+     * @param {number} newPage
+     */
+    const handlePageChange = (newPage) => {
+      currentPage.value = newPage;
+    };
+
+    /**
+     * Sets the current sort option to the given value.
+     * @param {string} option
+     */
+    const setSortOption = (option) => {
+      sortOption.value = option;
+    };
+
+    /**
+     * Navigates to the "Add Recipe" page.
+     */
+    const addRecipe = () => {
+      router.push({ name: "RecipeForm" });
+    };
+
+    /**
+     * Navigates to the "Recipe Details" page, with the given recipe ID as a
+     * parameter.
+     * @param {number} id
+     */
+    const viewRecipe = (id) => {
+      router.push({ name: "RecipeDetails", params: { id } });
+    };
+
+    /**
+     * Navigates to the "Edit Recipe" page, with the given recipe ID as a
+     * parameter.
+     * @param {number} id
+     */
+    const editRecipe = (id) => {
+      router.push({ name: "RecipeEditForm", params: { id } });
+    };
+
+    /**
+     * Confirms with the user before deleting the recipe with the given ID.
+     * @param {number} id
+     */
+    const confirmDelete = (id) => {
+      if (confirm("Are you sure you want to delete this recipe?")) {
+        deleteRecipe(id);
+      }
+    };
+
+    /**
+     * Deletes the recipe with the given ID from the API.
+     * @param {number} id
+     * @returns {Promise<void>}
+     */
+    const deleteRecipe = async (id) => {
+      try {
+        await axios.delete(`http://127.0.0.1:3000/recipes/${id}`);
+        recipes.value = recipes.value.filter((recipe) => recipe.id !== id);
+      } catch (error) {
+        error.value = "Error deleting recipe:" + error.message;
+      }
+    };
+
+    /**
+     * Confirms with the user before deleting the recipe with the given ID, and
+     * then calls `deleteRecipe` if the user confirms.
+     * @param {number} id
+     */
+    const handleDeleteConfirmation = (id) => {
+      confirmDelete(id);
+    };
+
+    // Fetch the recipes when the component is mounted.
+    onMounted(fetchRecipes);
+
+    return {
+      recipes,
+      categories,
+      searchQuery,
+      selectedCategory,
+      sortOption,
+      currentPage,
+      itemsPerPage,
+      filteredRecipes,
+      paginatedRecipes,
+      loading,
+      error,
+      handlePageChange,
+      setSortOption,
+      addRecipe,
+      viewRecipe,
+      editRecipe,
+      handleDeleteConfirmation,
+    };
   },
 };
 </script>
 
 <style scoped>
-.recipe-item {
-  margin-bottom: 10px;
-}
+/* Add custom styles if needed */
 </style>

@@ -8,11 +8,12 @@
  */
 import { createApp } from "vue";
 import App from "./App.vue";
+
 /**
  * The router is imported from the ./router file, which is responsible for
  * setting up the application's routing configuration.
  */
-import router from "./router";
+import router from "./router/index";
 /**
  * The Pinia store is a global, centralized store for the application's state.
  * It is created using the createPinia() function from the pinia library.
